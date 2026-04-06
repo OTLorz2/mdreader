@@ -242,3 +242,13 @@ body {
   font-size: 13px;
   padding: var(--space-2);
 }
+
+.article .mermaid {
+  margin: 1rem 0;
+  overflow-x: auto;
+}
+
+.article .mermaid svg {
+  max-width: 100%;
+  height: auto;
+}

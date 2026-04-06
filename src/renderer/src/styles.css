@@ -34,6 +34,11 @@
   --space-2xl: 48px;
   --space-3xl: 64px;
   --outline-width: 260px;
+  --scrollbar-size: 6px;
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: rgba(27, 73, 101, 0.24);
+  --scrollbar-thumb-hover: rgba(27, 73, 101, 0.42);
+  --scrollbar-thumb-active: rgba(22, 61, 85, 0.56);
   --font-ui: 'DM Sans', system-ui, sans-serif;
   --font-body: 'Source Serif 4', 'Georgia', serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
@@ -59,6 +64,56 @@ body {
   line-height: 1.5;
   background-color: var(--bg);
   color: var(--text);
+}
+
+/* Keep scrollbars subtle and paper-like across scroll containers */
+.outline,
+.main,
+.article pre,
+.article .mermaid {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.outline::-webkit-scrollbar,
+.main::-webkit-scrollbar,
+.article pre::-webkit-scrollbar,
+.article .mermaid::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+.outline::-webkit-scrollbar-track,
+.main::-webkit-scrollbar-track,
+.article pre::-webkit-scrollbar-track,
+.article .mermaid::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: var(--radius-lg);
+}
+
+.outline::-webkit-scrollbar-thumb,
+.main::-webkit-scrollbar-thumb,
+.article pre::-webkit-scrollbar-thumb,
+.article .mermaid::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--radius-lg);
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  min-height: 28px;
+}
+
+.outline::-webkit-scrollbar-thumb:hover,
+.main::-webkit-scrollbar-thumb:hover,
+.article pre::-webkit-scrollbar-thumb:hover,
+.article .mermaid::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+.outline::-webkit-scrollbar-thumb:active,
+.main::-webkit-scrollbar-thumb:active,
+.article pre::-webkit-scrollbar-thumb:active,
+.article .mermaid::-webkit-scrollbar-thumb:active {
+  background: var(--scrollbar-thumb-active);
 }
 
 body::before {

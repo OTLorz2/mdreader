@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MarkdownReader — 设计系统预览</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f6f3ee;
+      --bg-grain: rgba(90, 82, 70, 0.03);
+      --surface: #fffef9;
+      --surface-2: #faf7f0;
+      --text: #1a1a1a;
+      --muted: #5c5c5c;
+      --border: #e0dcd4;
+      --primary: #1b4965;
+      --primary-hover: #163d55;
+      --primary-fg: #f8f6f1;
+      --secondary-fg: #1a1a1a;
+      --success-bg: #e8f3ec;
+      --success-border: #9dc7a8;
+      --success-text: #1e4a2e;
+      --warning-bg: #fdf6e7;
+      --warning-border: #e8c46e;
+      --warning-text: #7a4e00;
+      --error-bg: #fcefef;
+      --error-border: #e8a4a4;
+      --error-text: #7f1d1d;
+      --info-bg: #e8eef3;
+      --info-border: #9eb4c8;
+      --info-text: #1b4965;
+      --shadow: 0 1px 2px rgba(26, 26, 26, 0.06), 0 8px 24px rgba(26, 26, 26, 0.06);
+      --radius-sm: 4px;
+      --radius-md: 6px;
+      --radius-lg: 10px;
+      --space-2xs: 2px;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+      --font-ui: "DM Sans", system-ui, sans-serif;
+      --font-body: "Source Serif 4", "Georgia", serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    }
+
+    [data-theme="dark"] {
+      --bg: #141210;
+      --bg-grain: rgba(255, 255, 255, 0.02);
+      --surface: #1c1a17;
+      --surface-2: #23211d;
+      --text: #ece8e0;
+      --muted: #a39e94;
+      --border: #3d3934;
+      --primary: #6ea8c9;
+      --primary-hover: #8ab8d4;
+      --primary-fg: #141210;
+      --secondary-fg: #ece8e0;
+      --success-bg: #15251a;
+      --success-border: #2f5c40;
+      --success-text: #a8d4b4;
+      --warning-bg: #2a2210;
+      --warning-border: #8a6a1f;
+      --warning-text: #e8c46e;
+      --error-bg: #2a1515;
+      --error-border: #8a3a3a;
+      --error-text: #f0a8a8;
+      --info-bg: #152028;
+      --info-border: #3a5a70;
+      --info-text: #9ec5e0;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 12px 32px rgba(0, 0, 0, 0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--font-ui);
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 1;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      mix-blend-mode: multiply;
+    }
+
+    [data-theme="dark"] body::before {
+      mix-blend-mode: screen;
+      opacity: 0.35;
+    }
+
+    .wrap {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: var(--space-lg) var(--space-md);
+      position: relative;
+      z-index: 1;
+    }
+
+    .top-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-md);
+    }
+
+    button.theme-toggle {
+      font-family: var(--font-ui);
+      font-size: 13px;
+      font-weight: 500;
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.18s ease-out, border-color 0.18s ease-out, transform 0.12s ease-out;
+    }
+
+    button.theme-toggle:hover {
+      background: var(--surface-2);
+    }
+
+    button.theme-toggle:active {
+      transform: scale(0.98);
+    }
+
+    .hero {
+      padding: var(--space-2xl) var(--space-lg);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      margin-bottom: var(--space-2xl);
+    }
+
+    .hero-kicker {
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 var(--space-sm);
+    }
+
+    .hero h1 {
+      font-family: var(--font-body);
+      font-size: clamp(2rem, 4vw, 2.75rem);
+      font-weight: 700;
+      line-height: 1.15;
+      margin: 0 0 var(--space-md);
+      letter-spacing: -0.02em;
+    }
+
+    .hero p {
+      font-family: var(--font-body);
+      font-size: 1.125rem;
+      max-width: 52ch;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    section {
+      margin-bottom: var(--space-2xl);
+    }
+
+    section > h2 {
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 var(--space-md);
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      box-shadow: var(--shadow);
+    }
+
+    .grid-2 {
+      display: grid;
+      gap: var(--space-md);
+      grid-template-columns: 1fr;
+    }
+
+    @media (min-width: 720px) {
+      .grid-2 {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .specimen-label {
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: var(--space-xs);
+    }
+
+    .specimen-hero {
+      font-family: var(--font-body);
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1.2;
+      margin: 0 0 var(--space-md);
+    }
+
+    .specimen-body {
+      font-family: var(--font-body);
+      font-size: 1.0625rem;
+      line-height: 1.65;
+      max-width: 48ch;
+      margin: 0 0 var(--space-md);
+    }
+
+    .specimen-ui-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      align-items: center;
+      margin-top: var(--space-md);
+    }
+
+    .btn {
+      font-family: var(--font-ui);
+      font-size: 14px;
+      font-weight: 600;
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--radius-md);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: background 0.18s ease-out, border-color 0.18s ease-out, color 0.18s ease-out;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: var(--primary-fg);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background: var(--surface-2);
+      color: var(--secondary-fg);
+      border-color: var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--surface);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--primary);
+      border-color: var(--border);
+    }
+
+    .btn-ghost:hover {
+      background: var(--surface-2);
+    }
+
+    .specimen-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      margin-top: var(--space-md);
+    }
+
+    .specimen-table th,
+    .specimen-table td {
+      text-align: left;
+      padding: var(--space-sm) var(--space-sm);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .specimen-table th {
+      font-weight: 600;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .code-inline {
+      font-family: var(--font-mono);
+      font-size: 0.92em;
+      background: var(--surface-2);
+      padding: 0.12em 0.35em;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .swatches {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: var(--space-md);
+    }
+
+    .swatch {
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .swatch-color {
+      height: 72px;
+    }
+
+    .swatch-meta {
+      padding: var(--space-sm) var(--space-md);
+      font-size: 12px;
+    }
+
+    .swatch-name {
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .swatch-hex {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .alerts {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+      margin-top: var(--space-md);
+    }
+
+    .alert {
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--radius-md);
+      border: 1px solid;
+      font-size: 14px;
+      font-family: var(--font-ui);
+    }
+
+    .alert-success {
+      background: var(--success-bg);
+      border-color: var(--success-border);
+      color: var(--success-text);
+    }
+
+    .alert-warning {
+      background: var(--warning-bg);
+      border-color: var(--warning-border);
+      color: var(--warning-text);
+    }
+
+    .alert-error {
+      background: var(--error-bg);
+      border-color: var(--error-border);
+      color: var(--error-text);
+    }
+
+    .alert-info {
+      background: var(--info-bg);
+      border-color: var(--info-border);
+      color: var(--info-text);
+    }
+
+    .form-row {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xs);
+      margin-bottom: var(--space-md);
+    }
+
+    .form-row label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .form-row input,
+    .form-row select {
+      font-family: var(--font-ui);
+      font-size: 14px;
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    .form-row input:focus {
+      outline: 2px solid var(--primary);
+      outline-offset: 1px;
+    }
+
+    /* Reader mock */
+    .mock-shell {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .mock-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-sm) var(--space-md);
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 13px;
+      font-family: var(--font-ui);
+    }
+
+    .mock-title {
+      font-weight: 500;
+      max-width: 55%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text);
+    }
+
+    .mock-actions {
+      display: flex;
+      gap: var(--space-xs);
+    }
+
+    .mock-icon-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      cursor: default;
+    }
+
+    .mock-body {
+      display: flex;
+      min-height: 320px;
+    }
+
+    .mock-outline {
+      width: 220px;
+      min-width: 180px;
+      border-right: 1px solid var(--border);
+      padding: var(--space-md);
+      font-family: var(--font-ui);
+      font-size: 13px;
+      background: var(--surface-2);
+    }
+
+    .mock-outline-item {
+      padding: var(--space-xs) var(--space-sm);
+      border-radius: var(--radius-sm);
+      margin-bottom: 2px;
+      color: var(--muted);
+    }
+
+    .mock-outline-item.active {
+      background: rgba(27, 73, 101, 0.12);
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    [data-theme="dark"] .mock-outline-item.active {
+      background: rgba(110, 168, 201, 0.15);
+    }
+
+    .mock-outline-item.l2 {
+      padding-left: var(--space-md);
+    }
+
+    .mock-outline-item.l3 {
+      padding-left: var(--space-lg);
+    }
+
+    .mock-article-wrap {
+      flex: 1;
+      padding: var(--space-lg) var(--space-md);
+      background: var(--bg);
+      overflow: auto;
+    }
+
+    .mock-article {
+      max-width: 42rem;
+      margin: 0 auto;
+      font-family: var(--font-body);
+      font-size: 1.0625rem;
+      line-height: 1.7;
+      color: var(--text);
+    }
+
+    .mock-article h2 {
+      font-family: var(--font-body);
+      font-size: 1.5rem;
+      margin: var(--space-lg) 0 var(--space-sm);
+    }
+
+    .mock-article p {
+      margin: 0 0 var(--space-md);
+    }
+
+    .mock-article a {
+      color: var(--primary);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    .mock-article code {
+      font-family: var(--font-mono);
+      font-size: 0.9em;
+    }
+
+    .contrast-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-sm);
+      margin-top: var(--space-md);
+    }
+
+    .contrast-box {
+      padding: var(--space-md);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      font-size: 13px;
+      font-family: var(--font-ui);
+    }
+
+    .footnote {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: var(--space-2xl);
+      max-width: 65ch;
+      font-family: var(--font-ui);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top-actions">
+      <button type="button" class="theme-toggle" id="themeToggle" aria-pressed="false">切换浅色 / 深色（预览）</button>
+    </div>
+
+    <header class="hero">
+      <p class="hero-kicker">Design system preview</p>
+      <h1>MarkdownReader</h1>
+      <p>Windows 上的读优先 Markdown 阅读器：纸张感浅色默认、左侧大纲、安全渲染。本页用于验收字体、色板与组件气质；正式应用是否提供深色可由产品策略单独决定。</p>
+    </header>
+
+    <section>
+      <h2>Typography</h2>
+      <div class="card">
+        <div class="specimen-label">Display / 文章标题</div>
+        <p class="specimen-hero">第三章 · 文件关联与回滚</p>
+        <div class="specimen-label">Body / 正文</div>
+        <p class="specimen-body">
+          安装包可将 <span class="code-inline">.md</span> 关联到本应用。若需回滚，可在 Windows 设置中按文件类型改回记事本。
+          长文阅读使用 <strong>Source Serif 4</strong>，笔画清晰，适合屏幕上的连续段落。
+        </p>
+        <div class="specimen-label">UI / 按钮与大纲</div>
+        <div class="specimen-ui-row">
+          <button type="button" class="btn btn-primary">打开文件</button>
+          <button type="button" class="btn btn-secondary">复制路径</button>
+          <button type="button" class="btn btn-ghost">了解更多</button>
+        </div>
+        <div class="specimen-label">Data / 等宽与表格</div>
+        <table class="specimen-table">
+          <thead>
+            <tr>
+              <th>错误码</th>
+              <th>含义</th>
+              <th>处理</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>NOT_FOUND</td>
+              <td>文件不存在</td>
+              <td>检查路径</td>
+            </tr>
+            <tr>
+              <td>EACCES</td>
+              <td>无权限读取</td>
+              <td>联系管理员</td>
+            </tr>
+            <tr>
+              <td>ERR_LINK_POLICY</td>
+              <td>外链被拦截</td>
+              <td>仅 https</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2>Color</h2>
+      <div class="card">
+        <div class="swatches" id="swatches"></div>
+        <div class="alerts">
+          <div class="alert alert-success">已保存阅读位置。</div>
+          <div class="alert alert-warning">文件超过 50k 字符，渲染可能变慢。</div>
+          <div class="alert alert-error">无法读取文件：权限不足。</div>
+          <div class="alert alert-info">提示：大纲仅包含 ATX 风格标题。</div>
+        </div>
+        <div class="contrast-pair">
+          <div class="contrast-box" style="background: var(--surface); color: var(--text);">
+            表面上的正文：高对比阅读。
+          </div>
+          <div class="contrast-box" style="background: var(--bg); color: var(--text);">
+            纸张底上的正文：层次柔和。
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Product mock · 阅读器壳</h2>
+      <div class="mock-shell">
+        <div class="mock-topbar">
+          <span class="mock-title">RUNBOOK — 生产故障演练.md</span>
+          <div class="mock-actions">
+            <span class="mock-icon-btn" title="刷新"></span>
+            <span class="mock-icon-btn" title="设置"></span>
+          </div>
+        </div>
+        <div class="mock-body">
+          <aside class="mock-outline">
+            <div class="mock-outline-item">概述</div>
+            <div class="mock-outline-item l2">范围</div>
+            <div class="mock-outline-item l2">角色</div>
+            <div class="mock-outline-item active">演练步骤</div>
+            <div class="mock-outline-item l3">触发告警</div>
+            <div class="mock-outline-item l3">回滚</div>
+            <div class="mock-outline-item">附录</div>
+          </aside>
+          <div class="mock-article-wrap">
+            <article class="mock-article">
+              <h2>演练步骤</h2>
+              <p>
+                当监控出现 <code>checkout_error_rate</code> 持续升高时，先确认是否为发布相关变更。
+                详细回滚命令见<a href="#">内部 Wiki</a>（仅 https 外链策略）。
+              </p>
+              <p>
+                记录应包含：时间线、影响面、根因假设与后续跟踪项。完成后将 Runbook 更新为「已验证」。
+              </p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Product mock · 设置表单</h2>
+      <div class="card">
+        <div class="form-row">
+          <label for="maxBytes">最大文件体积（字节）</label>
+          <input id="maxBytes" type="text" value="524288" readonly />
+        </div>
+        <div class="form-row">
+          <label for="theme">阅读主题</label>
+          <select id="theme">
+            <option>纸张浅色（默认）</option>
+            <option>高对比浅色</option>
+          </select>
+        </div>
+        <button type="button" class="btn btn-primary">保存</button>
+      </div>
+    </section>
+
+    <p class="footnote">
+      字体通过 Google Fonts 加载；生产环境可改为自托管 subset。动效建议：micro 50–100ms，短交互 150–250ms，ease-out 进入 / ease-in 退出。
+    </p>
+  </div>
+
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var btn = document.getElementById("themeToggle");
+      var swatches = document.getElementById("swatches");
+
+      var isDark = false;
+
+      var colors = [
+        { name: "Background", varName: "--bg", fallback: "#f6f3ee" },
+        { name: "Surface", varName: "--surface", fallback: "#fffef9" },
+        { name: "Text", varName: "--text", fallback: "#1a1a1a" },
+        { name: "Muted", varName: "--muted", fallback: "#5c5c5c" },
+        { name: "Border", varName: "--border", fallback: "#e0dcd4" },
+        { name: "Primary", varName: "--primary", fallback: "#1b4965" },
+        { name: "Success text", varName: "--success-text", fallback: "#1e4a2e" },
+        { name: "Warning text", varName: "--warning-text", fallback: "#7a4e00" },
+        { name: "Error text", varName: "--error-text", fallback: "#7f1d1d" },
+        { name: "Info text", varName: "--info-text", fallback: "#1b4965" }
+      ];
+
+      function getCssColor(varName, fallback) {
+        var v = getComputedStyle(root).getPropertyValue(varName).trim();
+        return v || fallback;
+      }
+
+      function renderSwatches() {
+        swatches.innerHTML = colors.map(function (c) {
+          var hex = getCssColor(c.varName, c.fallback);
+          return (
+            '<div class="swatch">' +
+              '<div class="swatch-color" style="background:' + hex + '"></div>' +
+              '<div class="swatch-meta">' +
+                '<div class="swatch-name">' + c.name + "</div>" +
+                '<div class="swatch-hex">' + hex + "</div>" +
+              "</div>" +
+            "</div>"
+          );
+        }).join("");
+      }
+
+      btn.addEventListener("click", function () {
+        isDark = !isDark;
+        root.setAttribute("data-theme", isDark ? "dark" : "");
+        btn.setAttribute("aria-pressed", isDark ? "true" : "false");
+        renderSwatches();
+      });
+
+      renderSwatches();
+    })();
+  </script>
+</body>
+</html>

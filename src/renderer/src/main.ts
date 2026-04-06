@@ -2,6 +2,31 @@ import './styles.css'
 import { extractOutline } from '../../lib/extract-outline'
 import { renderMarkdownToHtml } from '../../lib/render-markdown'
 
+let mermaidReady = false
+
+async function runMermaidInArticle(): Promise<void> {
+  const article = document.querySelector('#article') as HTMLElement | null
+  if (!article) return
+  const blocks = article.querySelectorAll('div.mermaid')
+  if (blocks.length === 0) return
+
+  const mermaid = (await import('mermaid')).default
+  if (!mermaidReady) {
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
+    })
+    mermaidReady = true
+  }
+
+  try {
+    await mermaid.run({ nodes: [...blocks] })
+  } catch {
+    // Mermaid 已在节点内展示错误；避免未处理 Promise 影响 DevTools
+  }
+}
+
 const elTitle = document.querySelector('#title') as HTMLSpanElement
 const elOutline = document.querySelector('#outline') as HTMLElement
 const elArticle = document.querySelector('#article') as HTMLElement
@@ -148,6 +173,7 @@ async function loadDocument(path: string): Promise<void> {
   const html = await renderMarkdownToHtml(result.markdown, { baseDir })
   elArticle.innerHTML = html
   buildOutline(result.markdown)
+  await runMermaidInArticle()
 
   const warnings: string[] = []
   if (result.warnLargeFile) warnings.push('文件较大，滚动或编辑可能卡顿。')

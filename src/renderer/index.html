@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MarkdownReader</title>
+  </head>
+  <body>
+    <header id="top" class="topbar">
+      <span id="title" class="title">MarkdownReader</span>
+      <div class="actions">
+        <button type="button" id="btn-open" aria-label="打开文件">打开</button>
+        <button type="button" id="btn-refresh" aria-label="刷新">刷新</button>
+      </div>
+    </header>
+    <div class="shell">
+      <nav id="outline" class="outline" aria-label="大纲"></nav>
+      <main id="main" class="main">
+        <article id="article" class="article prose"></article>
+      </main>
+    </div>
+    <footer id="status" class="statusbar hidden"></footer>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

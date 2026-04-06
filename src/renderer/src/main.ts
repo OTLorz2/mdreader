@@ -15,7 +15,7 @@ async function runMermaidInArticle(): Promise<void> {
     mermaid.initialize({
       startOnLoad: false,
       securityLevel: 'strict',
-      theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
+      theme: 'default'
     })
     mermaidReady = true
   }
@@ -60,7 +60,7 @@ function renderEmptyState(): void {
   elArticle.innerHTML = `
     <div class="empty-state">
       <p>选择本地 Markdown 文件开始阅读。</p>
-      <button type="button" class="primary" id="btn-empty-open">选择 Markdown</button>
+      <button type="button" class="btn btn-primary" id="btn-empty-open">选择 Markdown</button>
     </div>
   `
   const b = elArticle.querySelector('#btn-empty-open')
@@ -156,7 +156,7 @@ async function loadDocument(path: string): Promise<void> {
     elArticle.innerHTML = `<div class="error-card" role="alert">
       <strong>${escapeHtml(result.code)}</strong>
       <p>${escapeHtml(result.message)}</p>
-      ${result.detail ? `<pre style="white-space:pre-wrap;font-size:12px">${escapeHtml(result.detail)}</pre>` : ''}
+      ${result.detail ? `<pre class="error-detail">${escapeHtml(result.detail)}</pre>` : ''}
     </div>`
     hideStatus()
     return

@@ -4,17 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MarkdownReader</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <header id="top" class="topbar">
       <span id="title" class="title">MarkdownReader</span>
       <div class="actions">
-        <button type="button" id="btn-open" aria-label="打开文件">打开</button>
-        <button type="button" id="btn-refresh" aria-label="刷新">刷新</button>
+        <button type="button" id="btn-open" class="btn btn-secondary" aria-label="打开文件">打开</button>
+        <button type="button" id="btn-refresh" class="btn btn-secondary" aria-label="刷新">刷新</button>
       </div>
     </header>
     <div class="shell">
-      <nav id="outline" class="outline" aria-label="大纲"></nav>
+      <nav class="outline-shell" aria-label="大纲">
+        <h2 class="outline-heading">大纲</h2>
+        <div id="outline" class="outline"></div>
+      </nav>
       <main id="main" class="main">
         <article id="article" class="article prose"></article>
       </main>

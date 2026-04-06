@@ -45,7 +45,7 @@ const schema = {
   tagNames: [...(defaultSchema.tagNames ?? []), 'div'],
   attributes: {
     ...defaultSchema.attributes,
-    div: [...(defaultSchema.attributes?.div ?? []), ['class', /^mermaid$/]]
+    div: [...(defaultSchema.attributes?.div ?? []), ['className', /^mermaid$/]]
   },
   protocols: {
     ...defaultSchema.protocols,

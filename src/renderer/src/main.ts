@@ -1,5 +1,7 @@
 import './styles.css'
+import { computeActiveHeadingId } from '../../lib/active-heading'
 import { extractOutline } from '../../lib/extract-outline'
+import { computeOutlineScrollTopToCenter } from '../../lib/outline-scroll'
 import { renderMarkdownToHtml } from '../../lib/render-markdown'
 
 let mermaidReady = false
@@ -37,7 +39,10 @@ const btnRefresh = document.querySelector('#btn-refresh') as HTMLButtonElement
 
 let currentPath: string | null = null
 let scrollRaf = 0
-let observer: IntersectionObserver | null = null
+
+const READ_LINE_OFFSET = 12
+let outlineAutoScrollEnabled = true
+let suppressOutlineScroll = false
 
 function showStatus(html: string, persistent = true): void {
   elStatus.innerHTML = html
@@ -78,45 +83,51 @@ function setOutlineActive(id: string | null): void {
   })
 }
 
-function setupOutlineScrollSpy(): void {
-  observer?.disconnect()
-  observer = null
-  const headings = elArticle.querySelectorAll('h1, h2, h3, h4, h5, h6')
-  if (headings.length === 0) return
+function setOutlineScrollTopProgrammatic(value: number): void {
+  suppressOutlineScroll = true
+  elOutline.scrollTop = value
+  requestAnimationFrame(() => {
+    suppressOutlineScroll = false
+  })
+}
 
-  observer = new IntersectionObserver(
-    (entries) => {
-      const visible = entries
-        .filter((e) => e.isIntersecting)
-        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)
-      const top = visible[0]?.target as HTMLElement | undefined
-      const id = top?.id || null
-      if (id) setOutlineActive(id)
-    },
-    { root: elMain, rootMargin: '-10% 0px -70% 0px', threshold: [0, 0.25, 0.5, 1] }
+function syncOutlineScrollToActive(id: string | null): void {
+  if (!id || !outlineAutoScrollEnabled) return
+  const btn = elOutline.querySelector(
+    `button[data-anchor-id="${CSS.escape(id)}"]`
+  ) as HTMLButtonElement | null
+  if (!btn) return
+  const outlineRect = elOutline.getBoundingClientRect()
+  const btnRect = btn.getBoundingClientRect()
+  const contentY = elOutline.scrollTop + (btnRect.top - outlineRect.top)
+  const next = computeOutlineScrollTopToCenter(
+    elOutline.clientHeight,
+    elOutline.scrollHeight,
+    contentY,
+    btnRect.height
   )
-
-  headings.forEach((h) => observer!.observe(h))
+  setOutlineScrollTopProgrammatic(next)
 }
 
 function onMainScroll(): void {
   if (scrollRaf) return
   scrollRaf = requestAnimationFrame(() => {
     scrollRaf = 0
+    outlineAutoScrollEnabled = true
+
     const headings = [...elArticle.querySelectorAll('h1, h2, h3, h4, h5, h6')] as HTMLElement[]
     if (headings.length === 0) return
+
     const mainRect = elMain.getBoundingClientRect()
-    let best: HTMLElement | null = null
-    let bestDist = Infinity
-    for (const h of headings) {
+    const rects = headings.map((h) => {
       const r = h.getBoundingClientRect()
-      const dist = Math.abs(r.top - mainRect.top - 12)
-      if (r.bottom > mainRect.top && dist < bestDist) {
-        bestDist = dist
-        best = h
-      }
+      return { id: h.id, top: r.top, bottom: r.bottom }
+    })
+    const id = computeActiveHeadingId(rects, mainRect.top, READ_LINE_OFFSET)
+    if (id) {
+      setOutlineActive(id)
+      syncOutlineScrollToActive(id)
     }
-    if (best?.id) setOutlineActive(best.id)
   })
 }
 
@@ -140,6 +151,8 @@ function buildOutline(markdown: string): void {
         block: 'start'
       })
       setOutlineActive(item.id)
+      outlineAutoScrollEnabled = true
+      requestAnimationFrame(() => syncOutlineScrollToActive(item.id))
     })
     elOutline.appendChild(btn)
   }
@@ -173,6 +186,7 @@ async function loadDocument(path: string): Promise<void> {
   const html = await renderMarkdownToHtml(result.markdown, { baseDir })
   elArticle.innerHTML = html
   buildOutline(result.markdown)
+  outlineAutoScrollEnabled = true
   await runMermaidInArticle()
 
   const warnings: string[] = []
@@ -183,7 +197,6 @@ async function loadDocument(path: string): Promise<void> {
 
   elMain.removeEventListener('scroll', onMainScroll)
   elMain.addEventListener('scroll', onMainScroll, { passive: true })
-  setupOutlineScrollSpy()
   onMainScroll()
 }
 
@@ -230,6 +243,15 @@ btnOpen.addEventListener('click', () => void pickAndOpen())
 btnRefresh.addEventListener('click', () => {
   if (currentPath) void loadDocument(currentPath)
 })
+
+elOutline.addEventListener(
+  'scroll',
+  () => {
+    if (suppressOutlineScroll) return
+    outlineAutoScrollEnabled = false
+  },
+  { passive: true }
+)
 
 window.readerApi.onFileOpenRequested((path) => void loadDocument(path))
 

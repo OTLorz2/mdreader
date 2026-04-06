@@ -72,6 +72,18 @@
 
 ---
 
+### 设计审查：gstack browse 截图回归（静态审查已做部分修复）
+
+**What:** 安装/构建 gstack `browse` 后，对 `npm run dev` 下真实 Electron/Vite 界面跑完整设计审查（截图、响应式、控制台），并与 `.gstack/design-reports/design-audit-markdownreader-2026-04-06.md` 对照更新基线。
+
+**Why:** 2026-04-06 审查因 Windows 上无 browse 二进制改为静态代码审计；缺少像素级证据与交互手感记录。
+
+**Effort:** S  
+**Priority:** P2  
+**Depends on:** gstack 本地 setup 完成  
+
+---
+
 ## Completed
 
 <!-- 完成后将对应条目移至此处并追加：**Completed:** vX.Y.Z (YYYY-MM-DD) -->

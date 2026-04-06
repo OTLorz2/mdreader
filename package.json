@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "description": "Internal Markdown reader — read-first, outline, Windows association",
   "type": "module",
-  "main": "out/main/index.js",
+  "main": "out/main/index.cjs",
   "scripts": {
-    "dev": "electron-vite dev",
+    "dev": "node scripts/run-electron-vite.mjs dev",
     "build": "electron-vite build",
-    "preview": "electron-vite preview",
+    "preview": "node scripts/run-electron-vite.mjs preview",
     "test": "vitest run",
     "test:watch": "vitest",
     "dist": "electron-vite build && electron-builder --win"
@@ -17,12 +17,12 @@
     "github-slugger": "^2.0.0",
     "iconv-lite": "^0.6.3",
     "mdast-util-to-string": "^4.0.0",
-    "remark-gfm": "^4.0.0",
-    "remark-parse": "^11.0.0",
-    "remark-rehype": "^11.0.0",
     "rehype-sanitize": "^6.0.0",
     "rehype-slug": "^6.0.0",
     "rehype-stringify": "^10.0.0",
+    "remark-gfm": "^4.0.0",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.0.0",
     "unified": "^11.0.0",
     "unist-util-visit": "^5.0.0"
   },
@@ -39,14 +39,25 @@
     "appId": "com.internal.markdown.reader",
     "productName": "MarkdownReader",
     "icon": "build/icon.png",
-    "directories": { "output": "release" },
-    "files": ["out/**/*", "package.json"],
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
     "win": {
-      "target": ["nsis", "zip"],
+      "target": [
+        "nsis",
+        "zip"
+      ],
       "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
       "signAndEditExecutable": false
     },
-    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
     "fileAssociations": [
       {
         "ext": "md",

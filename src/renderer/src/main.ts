@@ -109,7 +109,11 @@ function buildOutline(markdown: string): void {
     btn.dataset.anchorId = item.id
     btn.style.paddingLeft = `${(item.depth - 1) * 12 + 8}px`
     btn.addEventListener('click', () => {
-      document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      document.getElementById(item.id)?.scrollIntoView({
+        behavior: reduceMotion ? 'auto' : 'smooth',
+        block: 'start'
+      })
       setOutlineActive(item.id)
     })
     elOutline.appendChild(btn)

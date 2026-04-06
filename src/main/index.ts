@@ -5,6 +5,13 @@ import { MAX_FILE_BYTES, MAX_MARKDOWN_CHARS } from '../shared/constants'
 import type { OpenFileResult } from '../shared/types'
 import { readTextFileFromBuffer } from '../lib/read-text-file'
 
+if (typeof app?.requestSingleInstanceLock !== 'function') {
+  console.error(
+    '[MarkdownReader] Electron 主进程 API 不可用。若环境变量 ELECTRON_RUN_AS_NODE=1，请清除后重开终端再运行 npm run dev。'
+  )
+  process.exit(1)
+}
+
 const gotLock = app.requestSingleInstanceLock()
 if (!gotLock) {
   app.quit()
@@ -105,7 +112,7 @@ function createWindow(): void {
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
       contextIsolation: true,
-      sandbox: true
+      sandbox: false
     }
   })
   mainWindow = win

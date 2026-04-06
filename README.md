@@ -38,6 +38,12 @@ npm run dist
 
 若企业网络无法访问 GitHub，`electron-builder` 在首次构建时可能需下载 NSIS 等工具；已在 `package.json` 的 `build.win` 中设置 `signAndEditExecutable: false`，避免额外拉取 `winCodeSign`（仍会写入可执行元数据，**不替代**正式代码签名流程）。图标使用 `build/icon.png`（electron-builder 会用于打包）。
 
+主进程构建为 **CommonJS**（`out/main/index.cjs`），避免 Vite/Rollup 生成 ESM 主进程时对 Node 内置 `buffer`/`fs` 的 default import 在 Electron 下触发 `cjsPreparseModuleExports` 崩溃。
+
+### 启动失败 / 窗口一闪而过
+
+- **环境变量 `ELECTRON_RUN_AS_NODE=1`**：在此模式下 `require('electron')` 会变成路径字符串，主进程 API 不可用。`npm run dev` / `npm run preview` 通过 `scripts/run-electron-vite.mjs` 在**子进程环境对象中删除**该变量（比 Windows 上 `cross-env VAR=` 更可靠）。若你直接在终端执行 `electron-vite dev` 或从 IDE 配置启动，请自行去掉全局/用户级的 `ELECTRON_RUN_AS_NODE`，或在 PowerShell 中先执行：`Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue`。
+
 ## 错误码（英文）
 
 | 码 | 含义 |

@@ -4,3 +4,20 @@ release/
 dist/
 *.log
 .DS_Store
+Thumbs.db
+
+# Local env / secrets
+.env
+.env.*
+!.env.example
+
+# gstack / local tooling output (design reports, caches)
+.gstack/
+
+# IDE / OS
+.idea/
+*.tsbuildinfo
+
+# Test / coverage artifacts
+coverage/
+.nyc_output/

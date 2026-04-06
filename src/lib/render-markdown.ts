@@ -7,6 +7,7 @@ import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import rehypeStringify from 'rehype-stringify'
 import { visit } from 'unist-util-visit'
 import type { Element, Root as HastRoot } from 'hast'
+import { rehypeMermaidBlocks } from './rehype-mermaid-blocks'
 
 export type RenderOptions = {
   baseDir: string | null
@@ -41,6 +42,11 @@ const schema = {
   ...defaultSchema,
   /** 与正文 slug 一致，避免 `id` 被加上 `user-content-` 前缀 */
   clobberPrefix: '',
+  tagNames: [...(defaultSchema.tagNames ?? []), 'div'],
+  attributes: {
+    ...defaultSchema.attributes,
+    div: [...(defaultSchema.attributes?.div ?? []), ['class', /^mermaid$/]]
+  },
   protocols: {
     ...defaultSchema.protocols,
     src: [...(defaultSchema.protocols?.src ?? []), 'http', 'https', 'file', 'data'],
@@ -68,6 +74,7 @@ export async function renderMarkdownToHtml(
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkRehype, { allowDangerousHtml: false })
+    .use(rehypeMermaidBlocks)
     .use(() => (tree: HastRoot) => {
       rewriteImageSrc(tree, options.baseDir)
     })
